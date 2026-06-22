@@ -1,0 +1,50 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pyc
+.venv/
+venv/
+env/
+
+# Environment files
+.env
+
+# VS Code
+.vscode/
+
+# System files
+.DS_Store
+Thumbs.db
+
+# Uploads and generated outputs
+uploads/*
+!uploads/.gitkeep
+
+outputs/*
+!outputs/.gitkeep
+
+# Sample certificate images
+# Keep folder structure, but avoid pushing copyrighted/private documents
+samples/**/*.jpg
+samples/**/*.jpeg
+samples/**/*.png
+samples/**/*.pdf
+
+# OCR/model/cache files
+.paddleocr/
+.paddlex/
+.cache/
+*.log
+
+# Large model/checkpoint files
+*.pt
+*.pth
+*.ckpt
+*.safetensors
+*.onnx
+
+# Temporary files
+*.tmp
+*.bak
