@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>CertDigi | Upload Certificate</title>
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+
+<body>
+  <main class="upload-page">
+    <section class="upload-shell">
+      <div class="upload-left">
+        <div class="brand">CertDigi</div>
+
+        <div class="hero-copy">
+          <p class="eyebrow">Instant Digitalization</p>
+          <h1>Upload a Certificate to Digitize</h1>
+          <p class="hero-description">
+            Convert scanned birth, death, and marriage certificates into structured OCR summaries
+            and reviewable digital certificate records.
+          </p>
+        </div>
+
+        <div class="certificate-types">
+          <span>Birth Certificate</span>
+          <span>Death Certificate</span>
+          <span>Marriage Certificate</span>
+        </div>
+      </div>
+
+      <div class="upload-right">
+        <form id="uploadForm" class="upload-card" action="/upload" method="post" enctype="multipart/form-data">
+          <div class="upload-icon">📄</div>
+
+          <h2>Upload Certificate</h2>
+          <p>
+            Choose a scanned certificate image. The system will run OCR,
+            detect the certificate type, and generate a structured digital output.
+          </p>
+
+          <label id="dropzone" class="dropzone" for="fileInput">
+            <input id="fileInput" type="file" name="file" accept="image/*,.png,.jpg,.jpeg,.webp,.bmp,.tif,.tiff" required>
+
+            <span class="drop-main">Choose file or drag image here</span>
+            <span id="fileName" class="file-name">No file selected</span>
+          </label>
+
+          <button id="submitBtn" class="primary-btn" type="submit">
+            Start OCR Processing
+          </button>
+
+          <p id="processingText" class="processing-text hidden">
+            Processing OCR. Please wait...
+          </p>
+
+          <div class="mini-note">
+            Human review is required for historical records, faded scans, and handwritten entries.
+          </div>
+        </form>
+      </div>
+    </section>
+  </main>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
