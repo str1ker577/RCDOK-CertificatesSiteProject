@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>OCR Result | CertDigi</title>
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+
+<body>
+  {% macro show_value(value) -%}
+    {{ value if value and value != "None" else "Review needed" }}
+  {%- endmacro %}
+
+  {% set cert_type = structured_certificate.certificate_type|default(result.certificate_type)|lower %}
+
+  <main class="result-page">
+    <section class="summary-card">
+      <div class="result-header">
+        <div>
+          <span class="pill">{{ cert_type|title }} Certificate</span>
+          <h1>Digitalized {{ cert_type|title }} Certificate</h1>
+          <p>Machine-generated OCR reconstruction. Review before official use.</p>
+        </div>
+
+        <a class="close-btn" href="/" title="Upload another certificate">×</a>
+      </div>
+
+      <div class="actions">
+        <a class="secondary-btn" href="/">Upload Another</a>
+        <a class="secondary-btn" href="/download/{{ json_filename }}">Download JSON</a>
+        <a class="secondary-btn" href="/download/{{ csv_filename }}">Download CSV</a>
+        <button class="primary-btn print-btn" type="button" onclick="window.print()">Download PDF</button>
+      </div>
+    </section>
+
+    <section class="certificate-outer-frame">
+      <div class="certificate-title-strip">
+        <span>Digitized Archival Record</span>
+        <strong>{{ structured_certificate.layout_type|default("structured_certificate_output") }}</strong>
+      </div>
+
+      <article class="certificate-inner-frame printable-certificate">
+        <header class="cert-header">
+          <p class="cert-country">REPUBLIC OF THE PHILIPPINES</p>
+
+          {% if cert_type == "marriage" %}
+            <h2>MARRIAGE CONTRACT</h2>
+            <p class="cert-subtitle">CONTRATO MATRIMONIAL</p>
+          {% elif cert_type == "birth" %}
+            <h2>BIRTH CERTIFICATE</h2>
+            <p class="cert-subtitle">Basic Digital Reconstruction</p>
+          {% elif cert_type == "death" %}
+            <h2>DEATH CERTIFICATE</h2>
+            <p class="cert-subtitle">Basic Digital Reconstruction</p>
+          {% else %}
+            <h2>CERTIFICATE RECORD</h2>
+            <p class="cert-subtitle">OCR Digital Reconstruction</p>
+          {% endif %}
+        </header>
+
+        <div class="certificate-content-frame">
+          {% if cert_type == "marriage" %}
+            {% set location = structured_certificate.location|default({}) %}
+            {% set parties = structured_certificate.contracting_parties|default({}) %}
+            {% set husband = parties.husband|default({}) %}
+            {% set wife = parties.wife|default({}) %}
+            {% set parents = structured_certificate.parents_and_witnesses|default({}) %}
+            {% set details = structured_certificate.marriage_details|default({}) %}
+            {% set registration = structured_certificate.registration|default({}) %}
+
+            <div class="cert-location-grid">
+              <div class="cert-line-field">
+                <span>City or Municipality</span>
+                <strong>{{ show_value(location.city_or_municipality) }}</strong>
+              </div>
+              <div class="cert-line-field">
+                <span>Province</span>
+                <strong>{{ show_value(location.province) }}</strong>
+              </div>
+            </div>
+
+            <h3 class="cert-section-title">Contracting Parties</h3>
+            <table class="certificate-table">
+              <tr><th>Field</th><th>Husband / Esposo</th><th>Wife / Esposa</th></tr>
+              <tr><td>Name</td><td>{{ show_value(husband.name) }}</td><td>{{ show_value(wife.name) }}</td></tr>
+              <tr><td>Age</td><td>{{ show_value(husband.age) }}</td><td>{{ show_value(wife.age) }}</td></tr>
+              <tr><td>Nationality</td><td>{{ show_value(husband.nationality) }}</td><td>{{ show_value(wife.nationality) }}</td></tr>
+              <tr><td>Occupation</td><td>{{ show_value(husband.occupation) }}</td><td>{{ show_value(wife.occupation) }}</td></tr>
+              <tr><td>Residence</td><td>{{ show_value(husband.residence) }}</td><td>{{ show_value(wife.residence) }}</td></tr>
+              <tr><td>Civil Status</td><td>{{ show_value(husband.civil_status) }}</td><td>{{ show_value(wife.civil_status) }}</td></tr>
+            </table>
+
+            <h3 class="cert-section-title">Parents and Witnesses</h3>
+            <table class="certificate-table">
+              <tr><th>Field</th><th>Husband Side</th><th>Wife Side</th></tr>
+              <tr><td>Father</td><td>{{ show_value(parents.husband_father) }}</td><td>{{ show_value(parents.wife_father) }}</td></tr>
+              <tr><td>Mother</td><td>{{ show_value(parents.husband_mother) }}</td><td>{{ show_value(parents.wife_mother) }}</td></tr>
+              <tr><td>Witness</td><td>{{ show_value(parents.witness_1) }}</td><td>{{ show_value(parents.witness_2) }}</td></tr>
+            </table>
+
+            <h3 class="cert-section-title">Marriage Details</h3>
+            <table class="certificate-table compact-table">
+              <tr><td>Place of Marriage</td><td>{{ show_value(details.place_of_marriage) }}</td></tr>
+              <tr><td>Date of Marriage</td><td>{{ show_value(details.date_of_marriage) }}</td></tr>
+              <tr><td>Solemnizing Officer</td><td>{{ show_value(details.solemnizing_officer) }}</td></tr>
+              <tr><td>Officer Title</td><td>{{ show_value(details.officer_title) }}</td></tr>
+              <tr><td>Address</td><td>{{ show_value(details.address) }}</td></tr>
+              <tr><td>Registry Number</td><td>{{ show_value(registration.registry_number) }}</td></tr>
+            </table>
+
+          {% elif cert_type == "birth" %}
+            {% set child = structured_certificate.child|default({}) %}
+            {% set parents = structured_certificate.parents|default({}) %}
+            {% set registration = structured_certificate.registration|default({}) %}
+
+            <h3 class="cert-section-title">Child / Birth Details</h3>
+            <table class="certificate-table compact-table">
+              <tr><td>Full Name</td><td>{{ show_value(child.full_name) }}</td></tr>
+              <tr><td>Date of Birth</td><td>{{ show_value(child.date_of_birth) }}</td></tr>
+              <tr><td>Place of Birth</td><td>{{ show_value(child.place_of_birth) }}</td></tr>
+              <tr><td>Sex</td><td>{{ show_value(child.sex) }}</td></tr>
+            </table>
+
+            <h3 class="cert-section-title">Parents</h3>
+            <table class="certificate-table compact-table">
+              <tr><td>Father</td><td>{{ show_value(parents.father) }}</td></tr>
+              <tr><td>Mother</td><td>{{ show_value(parents.mother) }}</td></tr>
+            </table>
+
+            <h3 class="cert-section-title">Registration / Remarks</h3>
+            <table class="certificate-table compact-table">
+              <tr><td>Registry Number</td><td>{{ show_value(registration.registry_number) }}</td></tr>
+              <tr><td>Remarks</td><td>{{ show_value(registration.remarks) }}</td></tr>
+            </table>
+
+          {% elif cert_type == "death" %}
+            {% set deceased = structured_certificate.deceased|default({}) %}
+            {% set death = structured_certificate.death_details|default({}) %}
+            {% set registration = structured_certificate.registration|default({}) %}
+
+            <h3 class="cert-section-title">Deceased Information</h3>
+            <table class="certificate-table compact-table">
+              <tr><td>Full Name</td><td>{{ show_value(deceased.name) }}</td></tr>
+              <tr><td>Age</td><td>{{ show_value(deceased.age) }}</td></tr>
+              <tr><td>Sex</td><td>{{ show_value(deceased.sex) }}</td></tr>
+              <tr><td>Nationality</td><td>{{ show_value(deceased.nationality) }}</td></tr>
+              <tr><td>Occupation</td><td>{{ show_value(deceased.occupation) }}</td></tr>
+              <tr><td>Residence</td><td>{{ show_value(deceased.residence) }}</td></tr>
+            </table>
+
+            <h3 class="cert-section-title">Death Details</h3>
+            <table class="certificate-table compact-table">
+              <tr><td>Date of Death</td><td>{{ show_value(death.date_of_death) }}</td></tr>
+              <tr><td>Place of Death</td><td>{{ show_value(death.place_of_death) }}</td></tr>
+              <tr><td>Cause / Burial Detail</td><td>{{ show_value(death.cause_or_burial) }}</td></tr>
+            </table>
+
+            <h3 class="cert-section-title">Registration / Remarks</h3>
+            <table class="certificate-table compact-table">
+              <tr><td>Registry Number</td><td>{{ show_value(registration.registry_number) }}</td></tr>
+              <tr><td>Remarks</td><td>{{ show_value(registration.remarks) }}</td></tr>
+            </table>
+          {% endif %}
+
+          <p class="cert-review-note">
+            This digital certificate is machine-generated from OCR results. Fields marked as “Review needed”
+            should be manually checked against the uploaded certificate image.
+          </p>
+        </div>
+      </article>
+    </section>
+
+    <section class="content-grid screen-only">
+      <div class="panel">
+        <h2>Uploaded Certificate</h2>
+        <img class="preview-img" src="{{ image_url }}" alt="Uploaded certificate">
+      </div>
+
+      <div class="panel">
+        <h2>Processing Summary</h2>
+        <div class="summary-list">
+          <div><span>Detected Type</span><strong>{{ result.certificate_type|title }}</strong></div>
+          <div><span>OCR Text Items</span><strong>{{ result.ocr_text_count }}</strong></div>
+          <div><span>Field Candidates</span><strong>{{ result.field_candidates|length }}</strong></div>
+          <div><span>Review Policy</span><strong>Human review required</strong></div>
+        </div>
+      </div>
+    </section>
+
+    <details class="panel technical-panel screen-only">
+      <summary>Extracted Field Candidates</summary>
+      <table>
+        <thead>
+          <tr>
+            <th>Field</th>
+            <th>Candidate Value</th>
+            <th>Confidence</th>
+            <th>Review Status</th>
+            <th>Method</th>
+            <th>Detected Label</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for field in result.field_candidates %}
+            <tr>
+              <td>{{ field.field_name }}</td>
+              <td>{{ field.field_value_candidate }}</td>
+              <td>{{ field.confidence }}</td>
+              <td><span class="status {{ field.review_status }}">{{ field.review_status }}</span></td>
+              <td>{{ field.method }}</td>
+              <td>{{ field.label_text }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </details>
+
+    <details class="panel technical-panel screen-only">
+      <summary>Raw OCR Text Preview</summary>
+      <div class="ocr-fallback-box">
+        {% for item in result.ocr_items %}
+          {% if loop.index <= 150 %}
+            <p>{{ item.text }}</p>
+          {% endif %}
+        {% endfor %}
+      </div>
+    </details>
+  </main>
+</body>
+</html>
