@@ -1,19 +1,16 @@
 fastapi
 uvicorn[standard]
 python-multipart
+jinja2
 
 paddleocr
 paddlepaddle
 
-opencv-python
+opencv-python-headless
 pillow
 numpy
 pandas
 
 python-dotenv
 pydantic
-
-pdf2image
-pypdf
-
-jinja2
+reportlab

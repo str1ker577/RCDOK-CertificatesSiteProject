@@ -34,12 +34,21 @@ app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
 templates = Jinja2Templates(directory=BASE_DIR / "app" / "templates")
 
 
-ocr_engine = PaddleOCR(
-    lang="en",
-    use_doc_orientation_classify=False,
-    use_doc_unwarping=False,
-    use_textline_orientation=False,
-)
+ocr_engine = None
+
+
+def get_ocr_engine():
+    global ocr_engine
+
+    if ocr_engine is None:
+        ocr_engine = PaddleOCR(
+            lang="en",
+            use_doc_orientation_classify=False,
+            use_doc_unwarping=False,
+            use_textline_orientation=False,
+        )
+
+    return ocr_engine
 
 
 # =========================================================
@@ -1822,7 +1831,8 @@ def build_structured_certificate(result):
 # =========================================================
 
 def run_ocr(image_path):
-    result = ocr_engine.predict(str(image_path))
+    engine = get_ocr_engine()
+    result = engine.predict(str(image_path))
 
     if isinstance(result, list) and result:
         page = result[0]
