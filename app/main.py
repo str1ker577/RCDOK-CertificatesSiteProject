@@ -1290,6 +1290,156 @@ def extract_marriage_detail_rows(items, max_x):
     }
 
 
+
+def is_review_needed_value(value):
+    if value is None:
+        return True
+
+    text = str(value).strip()
+
+    if not text:
+        return True
+
+    lowered = norm(text)
+
+    if lowered in {
+        "review needed",
+        "none",
+        "null",
+        "nan",
+        "n a",
+        "na",
+        "field",
+        "name",
+        "age",
+        "sex",
+        "sexo",
+        "husband",
+        "wife",
+        "esposo",
+        "esposa",
+        "father",
+        "mother",
+        "padre",
+        "madre",
+        "witness",
+        "witnesses",
+        "testigo",
+        "testigos",
+        "city or municipality",
+        "province",
+        "ciudad o provincia",
+        "contracting parties",
+        "partes contrayentes",
+    }:
+        return True
+
+    label_fragments = [
+        "solemnizing this marriage",
+        "take each other as man and wife",
+        "contracting parties",
+        "partes contrayentes",
+        "city or municipality",
+        "ciudad o provincia",
+        "republic of the philippines",
+        "marriage contract",
+        "contrato matrimonial",
+    ]
+
+    if any(fragment in lowered for fragment in label_fragments):
+        return True
+
+    if len(lowered) <= 1:
+        return True
+
+    return False
+
+
+def prefer_value(primary, fallback):
+    if is_review_needed_value(primary) and not is_review_needed_value(fallback):
+        return fallback
+
+    return primary
+
+
+def get_candidate_fallback(result_or_items, field_name, minimum_confidence=0.85):
+    if isinstance(result_or_items, dict):
+        candidates = result_or_items.get("field_candidates", [])
+    else:
+        candidates = extract_field_candidates("marriage", result_or_items)
+
+    usable = []
+
+    for candidate in candidates:
+        if candidate.get("field_name") != field_name:
+            continue
+
+        try:
+            confidence = float(candidate.get("confidence", 0))
+        except Exception:
+            confidence = 0
+
+        value = candidate.get("field_value_candidate", "")
+        label = candidate.get("label_text", "")
+
+        if confidence < minimum_confidence:
+            continue
+
+        if is_review_needed_value(value):
+            continue
+
+        if len(str(label).split()) > 8:
+            continue
+
+        if "solemnizing" in norm(label):
+            continue
+
+        usable.append((confidence, value))
+
+    if not usable:
+        return "Review needed"
+
+    usable.sort(reverse=True, key=lambda item: item[0])
+    return usable[0][1]
+
+
+def add_marriage_template_aliases(structured):
+    husband = structured.get("husband", {})
+    wife = structured.get("wife", {})
+    details = structured.get("marriage_details", {})
+
+    structured["contracting_parties"] = {
+        "husband": husband,
+        "wife": wife,
+    }
+
+    structured["parents_and_witnesses"] = {
+        "husband_father": husband.get("father", "Review needed"),
+        "wife_father": wife.get("father", "Review needed"),
+        "husband_mother": husband.get("mother", "Review needed"),
+        "wife_mother": wife.get("mother", "Review needed"),
+        "witness_1": husband.get("witness", "Review needed"),
+        "witness_2": wife.get("witness", "Review needed"),
+    }
+
+    structured["registration"] = {
+        "registry_number": structured.get("registry_number", "Review needed"),
+    }
+
+    if "solemnizing_officer" not in details:
+        details["solemnizing_officer"] = details.get("solemnized_by", "Review needed")
+
+    if "officer_title" not in details:
+        details["officer_title"] = "Review needed"
+
+    if "address" not in details:
+        details["address"] = "Review needed"
+
+    structured["marriage_details"] = details
+
+    return structured
+
+
 def build_structured_marriage_certificate(items):
     max_x = max(float(item.get("x_max", 0)) for item in items)
     regions = find_column_regions(items, max_x)
@@ -1318,11 +1468,14 @@ def build_structured_marriage_certificate(items):
     if wife_age == "Review needed":
         wife_age = wife_age_from_contracting
 
+    candidate_husband = get_candidate_fallback(items, "husband", minimum_confidence=0.85)
+    candidate_wife = get_candidate_fallback(items, "wife", minimum_confidence=0.95)
+
     city, province = extract_top_location(items, max_x)
     details = extract_marriage_detail_rows(items, max_x)
 
     husband = {
-        "name": clean_person_name(husband_name_from_contracting),
+        "name": clean_person_name(prefer_value(husband_name_from_contracting, candidate_husband)),
         "age": display_value(husband_age),
         "nationality": extract_nationality(husband_nationality_raw, preferred="husband"),
         "occupation": extract_occupation(husband_occupation_raw),
@@ -1334,7 +1487,7 @@ def build_structured_marriage_certificate(items):
     }
 
     wife = {
-        "name": clean_person_name(wife_name_from_contracting),
+        "name": clean_person_name(prefer_value(wife_name_from_contracting, candidate_wife)),
         "age": display_value(wife_age),
         "nationality": extract_nationality(wife_nationality_raw, preferred="wife"),
         "occupation": extract_occupation(wife_occupation_raw),
@@ -1348,7 +1501,7 @@ def build_structured_marriage_certificate(items):
     if wife["civil_status"] == "Review needed" and re.search(r"\bSingle\b", wife_civil_raw, flags=re.IGNORECASE):
         wife["civil_status"] = "Single"
 
-    return {
+    structured = {
         "certificate_type": "marriage",
         "layout_type": "marriage_two_column_contract",
         "status": "machine_generated_review_required",
@@ -1366,6 +1519,10 @@ def build_structured_marriage_certificate(items):
         "debug": {
             "rows": rows,
             "regions": regions,
+            "field_candidate_fallbacks": {
+                "husband": candidate_husband,
+                "wife": candidate_wife,
+            },
             "raw_values": {
                 "husband_contracting_raw": husband_contracting_raw,
                 "wife_contracting_raw": wife_contracting_raw,
@@ -1380,6 +1537,9 @@ def build_structured_marriage_certificate(items):
             },
         },
     }
+
+    return add_marriage_template_aliases(structured)
+
 
 
 # =========================================================
@@ -1858,7 +2018,22 @@ def build_structured_certificate(result):
         }
 
     if cert_type == "marriage":
-        return build_structured_marriage_certificate(items)
+        structured = build_structured_marriage_certificate(items)
+
+        candidate_husband = get_candidate_fallback(result, "husband", minimum_confidence=0.85)
+        candidate_wife = get_candidate_fallback(result, "wife", minimum_confidence=0.95)
+
+        if "husband" in structured:
+            structured["husband"]["name"] = clean_person_name(
+                prefer_value(structured["husband"].get("name"), candidate_husband)
+            )
+
+        if "wife" in structured:
+            structured["wife"]["name"] = clean_person_name(
+                prefer_value(structured["wife"].get("name"), candidate_wife)
+            )
+
+        return add_marriage_template_aliases(structured)
 
     if cert_type == "birth":
         return build_structured_birth_certificate(items)
@@ -1980,7 +2155,7 @@ async def upload(request: Request, file: UploadFile = File(...)):
     digital_certificate = build_digital_certificate(result)
     
     structured_certificate = clean_structured_certificate_for_display(
-    build_structured_certificate(result)
+        build_structured_certificate(result)
     )
 
     output_json = OUTPUT_DIR / f"{image_path.stem}_result.json"
