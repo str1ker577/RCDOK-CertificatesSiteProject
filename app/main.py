@@ -61,6 +61,8 @@ def get_ocr_engine():
 
             ocr_engine = PaddleOCR(
                 lang="en",
+                text_detection_model_name="PP-OCRv6_medium_det",
+                text_recognition_model_name="PP-OCRv6_medium_rec",
                 use_doc_orientation_classify=False,
                 use_doc_unwarping=False,
                 use_textline_orientation=False,
