@@ -6,6 +6,8 @@ ENV FLAGS_use_mkldnn=0
 ENV FLAGS_use_onednn=0
 ENV FLAGS_enable_pir_api=0
 ENV HOME=/home/user
+ENV OMP_NUM_THREADS=1
+ENV OPENBLAS_NUM_THREADS=1
 
 RUN apt-get update && apt-get install -y \
     libglib2.0-0 \
