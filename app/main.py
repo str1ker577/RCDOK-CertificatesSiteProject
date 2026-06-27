@@ -3,6 +3,7 @@ import json
 import os
 import re
 import uuid
+import threading
 from pathlib import Path
 
 # PaddleOCR / PaddlePaddle Windows runtime safety settings
@@ -35,20 +36,60 @@ templates = Jinja2Templates(directory=BASE_DIR / "app" / "templates")
 
 
 ocr_engine = None
+ocr_lock = threading.Lock()
+
+ocr_state = {
+    "status": "not_loaded",
+    "error": None,
+}
 
 
 def get_ocr_engine():
     global ocr_engine
 
-    if ocr_engine is None:
-        ocr_engine = PaddleOCR(
-            lang="en",
-            use_doc_orientation_classify=False,
-            use_doc_unwarping=False,
-            use_textline_orientation=False,
-        )
+    if ocr_engine is not None:
+        return ocr_engine
 
-    return ocr_engine
+    with ocr_lock:
+        if ocr_engine is not None:
+            return ocr_engine
+
+        try:
+            print("Initializing PaddleOCR...")
+            ocr_state["status"] = "loading"
+            ocr_state["error"] = None
+
+            ocr_engine = PaddleOCR(
+                lang="en",
+                use_doc_orientation_classify=False,
+                use_doc_unwarping=False,
+                use_textline_orientation=False,
+            )
+
+            ocr_state["status"] = "ready"
+            print("PaddleOCR initialized.")
+            return ocr_engine
+
+        except Exception as exc:
+            ocr_state["status"] = "failed"
+            ocr_state["error"] = str(exc)
+            print(f"PaddleOCR initialization failed: {exc}")
+            raise
+
+
+def warmup_ocr_background():
+    try:
+        get_ocr_engine()
+    except Exception as exc:
+        print(f"OCR warmup failed: {exc}")
+
+
+def start_ocr_warmup():
+    if ocr_state["status"] in {"loading", "ready"}:
+        return
+
+    thread = threading.Thread(target=warmup_ocr_background, daemon=True)
+    thread.start()
 
 
 # =========================================================
@@ -1989,3 +2030,18 @@ def download_result(filename: str):
 @app.get("/health")
 def health():
     return {"status": "ok"}
+
+@app.get("/warmup")
+def warmup():
+    start_ocr_warmup()
+
+    return {
+        "message": "OCR warmup started",
+        "status": ocr_state["status"],
+        "error": ocr_state["error"],
+    }
+
+
+@app.get("/warmup-status")
+def warmup_status():
+    return ocr_state
