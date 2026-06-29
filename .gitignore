@@ -4,47 +4,44 @@ __pycache__/
 *.pyo
 *.pyd
 *.pyc
+
+# Virtual environments
 .venv/
 venv/
 env/
 
 # Environment files
 .env
+.env.local
 
-# VS Code
+# IDE
 .vscode/
+.idea/
 
-# System files
+# OS files
 .DS_Store
 Thumbs.db
 
-# Uploads and generated outputs
+# Temporary uploads and outputs
 uploads/*
-!uploads/.gitkeep
+outputs/web_demo/*
+outputs/temp/*
+outputs/*.json
+outputs/*.csv
 
-outputs/*
-!outputs/.gitkeep
-
-# Sample certificate images
-# Keep folder structure, but avoid pushing copyrighted/private documents
-samples/**/*.jpg
-samples/**/*.jpeg
-samples/**/*.png
-samples/**/*.pdf
-
-# OCR/model/cache files
-.paddleocr/
+# PaddleOCR / model cache
 .paddlex/
 .cache/
+*.pdmodel
+*.pdiparams
+*.pdparams
+
+# Logs
 *.log
 
-# Large model/checkpoint files
-*.pt
-*.pth
-*.ckpt
-*.safetensors
-*.onnx
+# Large archives
+*.zip
+*.rar
+*.7z
 
-# Temporary files
-*.tmp
-*.bak
+outputs/
